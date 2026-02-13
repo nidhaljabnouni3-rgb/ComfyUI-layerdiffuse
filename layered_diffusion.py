@@ -13,7 +13,6 @@ import comfy.supported_models_base
 from comfy.model_patcher import ModelPatcher
 from folder_paths import get_folder_paths
 from comfy.utils import load_torch_file
-from comfy_extras.nodes_compositing import JoinImageWithAlpha
 from comfy.conds import CONDRegular
 from .lib_layerdiffusion.utils import (
     load_file_from_url,
@@ -129,7 +128,11 @@ class LayeredDiffusionDecodeRGBA(LayeredDiffusionDecode):
     def decode(self, samples, images, sd_version: str, sub_batch_size: int):
         image, mask = super().decode(samples, images, sd_version, sub_batch_size)
         alpha = 1.0 - mask
-        return JoinImageWithAlpha().join_image_with_alpha(image, alpha)
+        batch_size = min(len(image), len(alpha))
+        out_images = []
+        for i in range(batch_size):
+            out_images.append(torch.cat((image[i][:,:,:3], alpha[i].unsqueeze(2)), dim=2))
+        return (torch.stack(out_images),)
 
 
 class LayeredDiffusionDecodeSplit(LayeredDiffusionDecodeRGBA):
