@@ -130,6 +130,7 @@ class LayeredDiffusionDecodeRGBA(LayeredDiffusionDecode):
         alpha = 1.0 - mask
         batch_size = min(len(image), len(alpha))
         out_images = []
+        alpha = 1.0 - alpha
         for i in range(batch_size):
             out_images.append(torch.cat((image[i][:,:,:3], alpha[i].unsqueeze(2)), dim=2))
         return (torch.stack(out_images),)
