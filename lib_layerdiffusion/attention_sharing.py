@@ -160,6 +160,23 @@ class AttentionSharingUnit(torch.nn.Module):
 
     def forward(self, h, context=None, value=None, transformer_options=None, **kwargs):
         transformer_options = self.transformer_options
+        
+        # Move all sub-layers to the same device as input
+        device = h.device
+        for f in range(self.frames):
+            self.to_q_lora[f] = self.to_q_lora[f].to(device)
+            self.to_k_lora[f] = self.to_k_lora[f].to(device)
+            self.to_v_lora[f] = self.to_v_lora[f].to(device)
+            self.to_out_lora[f] = self.to_out_lora[f].to(device)
+            self.original_module[f].to_out[1] = self.original_module[f].to_out[1].to(device)
+            if self.control_convs is not None:
+                self.control_convs[f] = self.control_convs[f].to(device)
+        self.temporal_n = self.temporal_n.to(device)
+        self.temporal_i = self.temporal_i.to(device)
+        self.temporal_q = self.temporal_q.to(device)
+        self.temporal_k = self.temporal_k.to(device)
+        self.temporal_v = self.temporal_v.to(device)
+        self.temporal_o = self.temporal_o.to(device)
 
         modified_hidden_states = einops.rearrange(
             h, "(b f) d c -> f b d c", f=self.frames
